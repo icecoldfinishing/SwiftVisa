@@ -14,9 +14,23 @@ public class PassportController {
         this.passportService = passportService;
     }
 
-    @GetMapping({"/", "/passports"})
+    @GetMapping("/")
+    public String dashboard(Model model) {
+        addLayoutContext(model, "dashboard");
+        model.addAttribute("passportCount", passportService.findAllPassports().size());
+        return "passport/dashboard";
+    }
+
+    @GetMapping("/passports")
     public String listPassports(Model model) {
+        addLayoutContext(model, "passports");
         model.addAttribute("passports", passportService.findAllPassports());
         return "passport/list";
+    }
+
+    private void addLayoutContext(Model model, String activeMenu) {
+        model.addAttribute("accountName", "Compte SwiftVisa");
+        model.addAttribute("accountRole", "AGENT");
+        model.addAttribute("activeMenu", activeMenu);
     }
 }

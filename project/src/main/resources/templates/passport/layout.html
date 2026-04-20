@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="appLayout(pageTitle, pageSubtitle, activeMenu, accountName, accountRole, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'SwiftVisa - ' + ${pageTitle}">SwiftVisa</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+        :root {
+            --bg-start: #f5efe7;
+            --bg-end: #dfe9f3;
+            --surface: #ffffff;
+            --ink: #1f2933;
+            --muted: #6b7280;
+            --line: #d7dde8;
+            --accent: #0b6e4f;
+            --accent-soft: #d9f4ea;
+            --sidebar: #11263a;
+            --sidebar-muted: #93a5bb;
+            --sidebar-active: #1f7a5d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "DM Sans", "Trebuchet MS", sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at 20% 10%, #fff4db 0%, transparent 30%),
+                        radial-gradient(circle at 80% 90%, #d6f7e8 0%, transparent 35%),
+                        linear-gradient(130deg, var(--bg-start) 0%, var(--bg-end) 100%);
+        }
+
+        .page-shell {
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #12283d 0%, #08131f 100%);
+            color: #f4f7fb;
+            padding: 1.75rem 1.25rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .brand {
+            font-family: "Space Grotesk", "Segoe UI", sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 0.02em;
+            margin-bottom: 1.5rem;
+        }
+
+        .account-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .account-name {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .role-pill {
+            margin-top: 0.45rem;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .role-admin {
+            background: #fdf0d5;
+            color: #8f4f00;
+        }
+
+        .role-agent {
+            background: #dff8ea;
+            color: #0e6447;
+        }
+
+        .role-user {
+            background: #e4ecf7;
+            color: #2b4d7a;
+        }
+
+        .menu-title {
+            color: var(--sidebar-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.65rem;
+        }
+
+        .menu-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 0.45rem;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: #dbe7f4;
+            border: 1px solid transparent;
+            border-radius: 0.75rem;
+            padding: 0.7rem 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .menu-link:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(2px);
+        }
+
+        .menu-link.is-active {
+            background: var(--sidebar-active);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .content-area {
+            padding: 1.2rem;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 1rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--line);
+            border-radius: 1rem;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 10px 24px rgba(18, 37, 55, 0.07);
+        }
+
+        .topbar h1 {
+            font-family: "Space Grotesk", "Segoe UI", sans-serif;
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .topbar p {
+            margin: 0.2rem 0 0;
+            color: var(--muted);
+        }
+
+        .sidebar-toggle {
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 0.7rem;
+            color: #243444;
+            padding: 0.45rem 0.75rem;
+            font-weight: 600;
+            display: none;
+        }
+
+        .content-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--line);
+            border-radius: 1rem;
+            box-shadow: 0 14px 35px rgba(18, 37, 55, 0.08);
+            overflow: hidden;
+            animation: panelReveal 450ms ease-out;
+        }
+
+        @keyframes panelReveal {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .page-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -320px;
+                width: 300px;
+                z-index: 50;
+                transition: left 0.2s ease;
+                box-shadow: 18px 0 40px rgba(4, 10, 18, 0.25);
+            }
+
+            .sidebar.is-open {
+                left: 0;
+            }
+
+            .sidebar-toggle {
+                display: inline-flex;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page-shell"
+     th:with="resolvedName=${accountName} ?: 'Compte demo',
+              resolvedRole=${accountRole} ?: 'USER',
+              resolvedActive=${activeMenu} ?: 'dashboard'">
+    <aside id="sidebar" class="sidebar">
+        <div class="brand">SwiftVisa Panel</div>
+
+        <div class="account-card">
+            <p class="account-name" th:text="${resolvedName}">Compte demo</p>
+            <span class="role-pill"
+                  th:classappend="${resolvedRole == 'ADMIN'} ? ' role-admin' : (${resolvedRole == 'AGENT'} ? ' role-agent' : ' role-user')"
+                  th:text="${resolvedRole}">USER</span>
+        </div>
+
+        <div class="menu-title">Navigation</div>
+        <ul class="menu-list">
+            <li>
+                <a th:href="@{/}" class="menu-link"
+                   th:classappend="${resolvedActive == 'dashboard'} ? ' is-active'">
+                    <span>Accueil</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/passports}" class="menu-link"
+                   th:classappend="${resolvedActive == 'passports'} ? ' is-active'">
+                    <span>Passeports</span>
+                </a>
+            </li>
+            <li th:if="${resolvedRole == 'AGENT'}">
+                <a th:href="@{/passports}" class="menu-link"
+                   th:classappend="${resolvedActive == 'queue'} ? ' is-active'">
+                    <span>Dossiers a traiter</span>
+                </a>
+            </li>
+            <li th:if="${resolvedRole == 'ADMIN'}">
+                <a th:href="@{/passports}" class="menu-link"
+                   th:classappend="${resolvedActive == 'admin'} ? ' is-active'">
+                    <span>Administration</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/passports}" class="menu-link"
+                   th:classappend="${resolvedActive == 'profile'} ? ' is-active'">
+                    <span>Profil</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <main class="content-area">
+        <header class="topbar">
+            <div>
+                <h1 th:text="${pageTitle}">Titre de page</h1>
+                <p th:text="${pageSubtitle}">Sous titre de page</p>
+            </div>
+            <button id="sidebarToggle" class="sidebar-toggle" type="button">Menu</button>
+        </header>
+
+        <section class="content-panel" th:replace="${content}">
+            <div style="padding: 1rem;">Contenu</div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const sidebar = document.getElementById("sidebar");
+    const sidebarToggle = document.getElementById("sidebarToggle");
+
+    if (sidebar && sidebarToggle) {
+        sidebarToggle.addEventListener("click", () => {
+            sidebar.classList.toggle("is-open");
+        });
+    }
+</script>
+</body>
+</html>
