@@ -1,0 +1,204 @@
+package com.visa.management.controller.demande.view;
+
+import com.visa.management.controller.demande.dto.CreateDemandeRequest;
+import com.visa.management.controller.demande.dto.DemandeListResponse;
+import com.visa.management.model.documents.DocumentCategorieVisa;
+import com.visa.management.service.demande.DemandeService;
+import com.visa.management.service.documents.DocumentCategorieVisaService;
+import com.visa.management.service.documents.DocumentService;
+import com.visa.management.service.utilities.NationaliteService;
+import com.visa.management.service.utilities.SituationFamilialeService;
+import com.visa.management.service.visa.VisaCategorieService;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+public class DossierViewController {
+
+    private final DemandeService demandeService;
+    private final SituationFamilialeService situationFamilialeService;
+    private final NationaliteService nationaliteService;
+    private final VisaCategorieService visaCategorieService;
+    private final DocumentService documentService;
+    private final DocumentCategorieVisaService documentCategorieVisaService;
+
+    public DossierViewController(
+        DemandeService demandeService,
+        SituationFamilialeService situationFamilialeService,
+        NationaliteService nationaliteService,
+        VisaCategorieService visaCategorieService,
+        DocumentService documentService,
+        DocumentCategorieVisaService documentCategorieVisaService
+    ) {
+        this.demandeService = demandeService;
+        this.situationFamilialeService = situationFamilialeService;
+        this.nationaliteService = nationaliteService;
+        this.visaCategorieService = visaCategorieService;
+        this.documentService = documentService;
+        this.documentCategorieVisaService = documentCategorieVisaService;
+    }
+
+    @GetMapping("/dossiers/nouveau")
+    public String newDossier(Model model) {
+        addLayoutContext(model, "dossiers-new");
+        DossierForm dossierForm;
+        if (!model.containsAttribute("dossierForm")) {
+            dossierForm = new DossierForm();
+            model.addAttribute("dossierForm", dossierForm);
+        } else {
+            dossierForm = (DossierForm) model.getAttribute("dossierForm");
+        }
+        applyFormDateDefaults(dossierForm);
+        addDossierFormOptions(model);
+        return "dossier/form";
+    }
+
+    @PostMapping("/dossiers")
+    public String createDossier(@ModelAttribute DossierForm form, RedirectAttributes redirectAttributes) {
+        try {
+            demandeService.createDemande(toRequest(form));
+            redirectAttributes.addFlashAttribute("successMessage", "Dossier cree avec succes.");
+            return "redirect:/dossiers";
+        } catch (Exception exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("dossierForm", form);
+            return "redirect:/dossiers/nouveau";
+        }
+    }
+
+    @GetMapping("/dossiers")
+    public String listDossiers(
+        @RequestParam(required = false) String statut,
+        @RequestParam(required = false) Long idCategorieVisa,
+        @RequestParam(required = false) Long idNationalite,
+        @RequestParam(required = false) LocalDate dateDebut,
+        @RequestParam(required = false) LocalDate dateFin,
+        @RequestParam(required = false) String recherche,
+        Model model
+    ) {
+        addLayoutContext(model, "dossiers");
+        List<DemandeListResponse> dossiers = demandeService.searchDemandes(
+            statut,
+            idCategorieVisa,
+            idNationalite,
+            dateDebut,
+            dateFin,
+            recherche
+        );
+        model.addAttribute("dossiers", dossiers);
+        model.addAttribute("visaCategories", visaCategorieService.findAllVisaCategories());
+        model.addAttribute("nationalites", nationaliteService.findAllNationalites());
+        model.addAttribute("statut", statut);
+        model.addAttribute("idCategorieVisa", idCategorieVisa);
+        model.addAttribute("idNationalite", idNationalite);
+        model.addAttribute("dateDebut", dateDebut);
+        model.addAttribute("dateFin", dateFin);
+        model.addAttribute("recherche", recherche);
+        return "dossier/list";
+    }
+
+    private CreateDemandeRequest toRequest(DossierForm form) {
+        CreateDemandeRequest request = new CreateDemandeRequest();
+        request.setIdCategorieVisa(form.getIdCategorieVisa());
+        request.setUploadedDocumentIds(form.getUploadedDocumentIds());
+
+        CreateDemandeRequest.EtatCivilRequest etatCivil = new CreateDemandeRequest.EtatCivilRequest();
+        etatCivil.setNom(form.getNom());
+        etatCivil.setPrenom(form.getPrenom());
+        etatCivil.setNomJeuneFille(form.getNomJeuneFille());
+        etatCivil.setDateNaissance(form.getDateNaissance());
+        etatCivil.setLieuNaissance(form.getLieuNaissance());
+        etatCivil.setSituationFamiliale(form.getSituationFamiliale());
+        etatCivil.setNationalite(form.getNationalite());
+        etatCivil.setContact(form.getContact());
+        etatCivil.setAdresse(form.getAdresse());
+        request.setEtatCivil(etatCivil);
+
+        CreateDemandeRequest.PassportRequest passport = new CreateDemandeRequest.PassportRequest();
+        passport.setNumero(form.getNumeroPassport());
+        passport.setDateDelivrance(form.getDateDelivrancePassport());
+        passport.setDateExpiration(form.getDateExpirationPassport());
+        request.setPassport(passport);
+
+        CreateDemandeRequest.VisaRequest visa = new CreateDemandeRequest.VisaRequest();
+        visa.setLieu(form.getLieuVisa());
+        visa.setDateEntree(form.getDateEntreeVisa());
+        visa.setDateExpiration(form.getDateExpirationVisa());
+        visa.setMotifDemande(form.getMotifDemande());
+        request.setVisa(visa);
+
+        return request;
+    }
+
+    private void addDossierFormOptions(Model model) {
+        model.addAttribute("situationsFamiliales", situationFamilialeService.findAllSituationsFamiliales());
+        model.addAttribute("nationalites", nationaliteService.findAllNationalites());
+        model.addAttribute("visaCategories", visaCategorieService.findAllVisaCategories());
+        model.addAttribute("documents", documentService.findAllDocuments());
+
+        List<DocumentCategorieVisa> mappings = documentCategorieVisaService.findAllDocumentCategorieVisas();
+        Map<Long, Set<Long>> requiredByCategorie = mappings
+            .stream()
+            .filter(DocumentCategorieVisa::isObligatoire)
+            .collect(
+                Collectors.groupingBy(
+                    DocumentCategorieVisa::getIdCategorieVisa,
+                    Collectors.mapping(DocumentCategorieVisa::getIdDocument, Collectors.toSet())
+                )
+            );
+        Map<Long, Set<Long>> availableCategoriesByDocument = mappings
+            .stream()
+            .collect(
+                Collectors.groupingBy(
+                    DocumentCategorieVisa::getIdDocument,
+                    Collectors.mapping(DocumentCategorieVisa::getIdCategorieVisa, Collectors.toSet())
+                )
+            );
+        Map<Long, Set<Long>> requiredCategoriesByDocument = mappings
+            .stream()
+            .filter(DocumentCategorieVisa::isObligatoire)
+            .collect(
+                Collectors.groupingBy(
+                    DocumentCategorieVisa::getIdDocument,
+                    Collectors.mapping(DocumentCategorieVisa::getIdCategorieVisa, Collectors.toSet())
+                )
+            );
+        model.addAttribute("requiredDocumentsByCategorie", requiredByCategorie);
+        model.addAttribute("availableCategoriesByDocument", availableCategoriesByDocument);
+        model.addAttribute("requiredCategoriesByDocument", requiredCategoriesByDocument);
+    }
+
+    private void addLayoutContext(Model model, String activeMenu) {
+        model.addAttribute("accountName", "Compte SwiftVisa");
+        model.addAttribute("accountRole", "AGENT");
+        model.addAttribute("activeMenu", activeMenu);
+    }
+
+    private void applyFormDateDefaults(DossierForm form) {
+        if (form.getDateNaissance() == null) {
+            form.setDateNaissance(LocalDate.of(2000, 1, 1));
+        }
+        if (form.getDateEntreeVisa() == null) {
+            form.setDateEntreeVisa(LocalDate.now());
+        }
+        if (form.getDateExpirationVisa() == null) {
+            form.setDateExpirationVisa(LocalDate.now());
+        }
+        if (form.getDateDelivrancePassport() == null) {
+            form.setDateDelivrancePassport(LocalDate.now());
+        }
+        if (form.getDateExpirationPassport() == null) {
+            form.setDateExpirationPassport(LocalDate.now());
+        }
+    }
+}

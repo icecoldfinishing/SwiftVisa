@@ -256,20 +256,32 @@
                     <span>Passeports</span>
                 </a>
             </li>
+            <li>
+                <a th:href="@{/dossiers}" class="menu-link"
+                   th:classappend="${resolvedActive == 'dossiers'} ? ' is-active'">
+                    <span>Dossiers</span>
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/dossiers/nouveau}" class="menu-link"
+                   th:classappend="${resolvedActive == 'dossiers-new'} ? ' is-active'">
+                    <span>Nouveau dossier</span>
+                </a>
+            </li>
             <li th:if="${resolvedRole == 'AGENT'}">
-                <a th:href="@{/passports}" class="menu-link"
+                <a th:href="@{/dossiers}" class="menu-link"
                    th:classappend="${resolvedActive == 'queue'} ? ' is-active'">
                     <span>Dossiers a traiter</span>
                 </a>
             </li>
             <li th:if="${resolvedRole == 'ADMIN'}">
-                <a th:href="@{/passports}" class="menu-link"
+                <a th:href="@{/dossiers}" class="menu-link"
                    th:classappend="${resolvedActive == 'admin'} ? ' is-active'">
                     <span>Administration</span>
                 </a>
             </li>
             <li>
-                <a th:href="@{/passports}" class="menu-link"
+                <a th:href="@{/}" class="menu-link"
                    th:classappend="${resolvedActive == 'profile'} ? ' is-active'">
                     <span>Profil</span>
                 </a>

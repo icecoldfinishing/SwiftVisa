@@ -1,3 +1,4 @@
+
 INSERT INTO situation_familiale (libelle) VALUES
 ('Celibataire'),
 ('Marie(e)'),
@@ -22,9 +23,28 @@ INSERT INTO passport (numero, date_delivrance, date_expiration) VALUES
 INSERT INTO document (libelle) VALUES 
 ('02 photos d''identite'),
 ('notice de renseignement'),
-('demande adressée à Mr le Ministre de l''intérieur et de la decentralisation (email + telephone)'),
-('photocopie certifiée du visa en cours de validité'),
-('photocopie certifiée de la première page du passport'),
-('photocopie certifiée de la carte résident en cours de validité'),
+('demande adressee à Mr le Ministre de l''interieur et de la decentralisation (email + telephone)'),
+('photocopie certifiee du visa en cours de validite'),
+('photocopie certifiee de la première page du passport'),
+('photocopie certifiee de la carte resident en cours de validite'),
 ('certificat de residence à Madagascar'),
 ('extrait de casier judiciaire à Madagascar');
+
+INSERT INTO visa_categorie (code, libelle) VALUES
+('TRAVAILLEUR', 'travailleur'),
+('INVESTISSEUR', 'investisseur');
+
+INSERT INTO demande_type_status (code, libelle) VALUES
+('DOSSIER_CREE', 'Dossier cree');
+
+INSERT INTO document_categorie_visa (id_document, id_categorie_visa, is_obligatoire) VALUES
+(1, 1, TRUE),
+(2, 1, TRUE),
+(3, 1, TRUE),
+(5, 1, TRUE),
+(1, 2, TRUE),
+(2, 2, TRUE),
+(3, 2, TRUE),
+(5, 2, TRUE),
+(7, 2, FALSE),
+(8, 2, FALSE);

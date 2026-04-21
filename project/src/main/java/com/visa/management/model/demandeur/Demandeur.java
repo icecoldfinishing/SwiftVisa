@@ -23,6 +23,9 @@ public class Demandeur {
     @Column(name = "prenom", length = 100)
     private String prenom;
 
+    @Column(name = "nom_jeune_fille", length = 100)
+    private String nomJeuneFille;
+
     @Column(name = "date_naissance")
     private LocalDate dateNaissance;
 
@@ -66,6 +69,14 @@ public class Demandeur {
 
     public void setPrenom(String prenom) {
         this.prenom = prenom;
+    }
+
+    public String getNomJeuneFille() {
+        return nomJeuneFille;
+    }
+
+    public void setNomJeuneFille(String nomJeuneFille) {
+        this.nomJeuneFille = nomJeuneFille;
     }
 
     public LocalDate getDateNaissance() {

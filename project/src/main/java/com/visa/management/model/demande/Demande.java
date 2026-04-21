@@ -32,6 +32,18 @@ public class Demande {
     @Column(name = "date_demande")
     private LocalDate dateDemande;
 
+    @Column(name = "lieu", length = 100)
+    private String lieu;
+
+    @Column(name = "date_entree")
+    private LocalDate dateEntree;
+
+    @Column(name = "date_expiration")
+    private LocalDate dateExpiration;
+
+    @Column(name = "motif_demande", length = 255)
+    private String motifDemande;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -81,6 +93,38 @@ public class Demande {
 
     public void setDateDemande(LocalDate dateDemande) {
         this.dateDemande = dateDemande;
+    }
+
+    public String getLieu() {
+        return lieu;
+    }
+
+    public void setLieu(String lieu) {
+        this.lieu = lieu;
+    }
+
+    public LocalDate getDateEntree() {
+        return dateEntree;
+    }
+
+    public void setDateEntree(LocalDate dateEntree) {
+        this.dateEntree = dateEntree;
+    }
+
+    public LocalDate getDateExpiration() {
+        return dateExpiration;
+    }
+
+    public void setDateExpiration(LocalDate dateExpiration) {
+        this.dateExpiration = dateExpiration;
+    }
+
+    public String getMotifDemande() {
+        return motifDemande;
+    }
+
+    public void setMotifDemande(String motifDemande) {
+        this.motifDemande = motifDemande;
     }
 
     public LocalDateTime getCreatedAt() {
