@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "passport")
@@ -16,7 +17,10 @@ public class Passport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "numero", nullable = false, unique = true, length = 50)
+    @Column(name = "id_demandeur")
+    private Long idDemandeur;
+
+    @Column(name = "numero", length = 50)
     private String numero;
 
     @Column(name = "date_delivrance")
@@ -24,6 +28,9 @@ public class Passport {
 
     @Column(name = "date_expiration")
     private LocalDate dateExpiration;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     public Long getId() {
         return id;
@@ -35,6 +42,14 @@ public class Passport {
 
     public String getNumero() {
         return numero;
+    }
+
+    public Long getIdDemandeur() {
+        return idDemandeur;
+    }
+
+    public void setIdDemandeur(Long idDemandeur) {
+        this.idDemandeur = idDemandeur;
     }
 
     public void setNumero(String numero) {
@@ -55,5 +70,13 @@ public class Passport {
 
     public void setDateExpiration(LocalDate dateExpiration) {
         this.dateExpiration = dateExpiration;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
