@@ -13,6 +13,10 @@ public interface DemandeService {
 
     DemandeCreatedResponse createDemande(CreateDemandeRequest request);
 
+    DemandeCreatedResponse updateDemande(Long idDemande, CreateDemandeRequest request);
+
+    CreateDemandeRequest getDemandeForEdit(Long idDemande);
+
     List<DemandeListResponse> searchDemandes(
         String statut,
         Long idCategorieVisa,

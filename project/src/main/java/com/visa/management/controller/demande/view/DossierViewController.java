@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -63,6 +64,19 @@ public class DossierViewController {
         return "dossier/form";
     }
 
+    @GetMapping("/dossiers/{id}/modifier")
+    public String editDossier(@PathVariable Long id, Model model) {
+        addLayoutContext(model, "dossiers");
+        if (!model.containsAttribute("dossierForm")) {
+            CreateDemandeRequest request = demandeService.getDemandeForEdit(id);
+            model.addAttribute("dossierForm", fromRequest(request));
+        }
+        model.addAttribute("isEditMode", true);
+        model.addAttribute("dossierId", id);
+        addDossierFormOptions(model);
+        return "dossier/form";
+    }
+
     @PostMapping("/dossiers")
     public String createDossier(@ModelAttribute DossierForm form, RedirectAttributes redirectAttributes) {
         try {
@@ -73,6 +87,19 @@ public class DossierViewController {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
             redirectAttributes.addFlashAttribute("dossierForm", form);
             return "redirect:/dossiers/nouveau";
+        }
+    }
+
+    @PostMapping("/dossiers/{id}")
+    public String updateDossier(@PathVariable Long id, @ModelAttribute DossierForm form, RedirectAttributes redirectAttributes) {
+        try {
+            demandeService.updateDemande(id, toRequest(form));
+            redirectAttributes.addFlashAttribute("successMessage", "Dossier modifie avec succes.");
+            return "redirect:/dossiers";
+        } catch (Exception exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            redirectAttributes.addFlashAttribute("dossierForm", form);
+            return "redirect:/dossiers/" + id + "/modifier";
         }
     }
 
@@ -138,6 +165,39 @@ public class DossierViewController {
         request.setVisa(visa);
 
         return request;
+    }
+
+    private DossierForm fromRequest(CreateDemandeRequest request) {
+        DossierForm form = new DossierForm();
+        form.setIdCategorieVisa(request.getIdCategorieVisa());
+        form.setUploadedDocumentIds(request.getUploadedDocumentIds());
+
+        if (request.getEtatCivil() != null) {
+            form.setNom(request.getEtatCivil().getNom());
+            form.setPrenom(request.getEtatCivil().getPrenom());
+            form.setNomJeuneFille(request.getEtatCivil().getNomJeuneFille());
+            form.setDateNaissance(request.getEtatCivil().getDateNaissance());
+            form.setLieuNaissance(request.getEtatCivil().getLieuNaissance());
+            form.setSituationFamiliale(request.getEtatCivil().getSituationFamiliale());
+            form.setNationalite(request.getEtatCivil().getNationalite());
+            form.setContact(request.getEtatCivil().getContact());
+            form.setAdresse(request.getEtatCivil().getAdresse());
+        }
+
+        if (request.getPassport() != null) {
+            form.setNumeroPassport(request.getPassport().getNumero());
+            form.setDateDelivrancePassport(request.getPassport().getDateDelivrance());
+            form.setDateExpirationPassport(request.getPassport().getDateExpiration());
+        }
+
+        if (request.getVisa() != null) {
+            form.setLieuVisa(request.getVisa().getLieu());
+            form.setDateEntreeVisa(request.getVisa().getDateEntree());
+            form.setDateExpirationVisa(request.getVisa().getDateExpiration());
+            form.setMotifDemande(request.getVisa().getMotifDemande());
+        }
+
+        return form;
     }
 
     private void addDossierFormOptions(Model model) {
