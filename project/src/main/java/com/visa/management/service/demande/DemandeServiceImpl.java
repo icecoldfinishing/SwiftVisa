@@ -125,6 +125,112 @@ public class DemandeServiceImpl implements DemandeService {
     }
 
     @Override
+    @Transactional
+    public DemandeCreatedResponse updateDemande(Long idDemande, CreateDemandeRequest request) {
+        validateRequiredDocuments(request.getIdCategorieVisa(), request.getUploadedDocumentIds());
+
+        Demande demande = demandeRepository
+            .findById(idDemande)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+
+        Demandeur demandeur = demandeurRepository
+            .findById(demande.getIdDemandeur())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demandeur introuvable"));
+
+        Passport passport = passportRepository
+            .findById(demande.getIdPassport())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Passport introuvable"));
+
+        demandeur.setNom(request.getEtatCivil().getNom());
+        demandeur.setPrenom(request.getEtatCivil().getPrenom());
+        demandeur.setNomJeuneFille(request.getEtatCivil().getNomJeuneFille());
+        demandeur.setDateNaissance(request.getEtatCivil().getDateNaissance());
+        demandeur.setLieuNaissance(request.getEtatCivil().getLieuNaissance());
+        demandeur.setIdSituationFamiliale(request.getEtatCivil().getSituationFamiliale());
+        demandeur.setIdNationalite(request.getEtatCivil().getNationalite());
+        demandeur.setTelephone(request.getEtatCivil().getContact());
+        demandeur.setAdresse(request.getEtatCivil().getAdresse());
+        demandeurRepository.save(demandeur);
+
+        passport.setNumero(request.getPassport().getNumero());
+        passport.setDateDelivrance(request.getPassport().getDateDelivrance());
+        passport.setDateExpiration(request.getPassport().getDateExpiration());
+        passportRepository.save(passport);
+
+        demande.setIdCategorieVisa(request.getIdCategorieVisa());
+        demande.setLieu(request.getVisa().getLieu());
+        demande.setDateEntree(request.getVisa().getDateEntree());
+        demande.setDateExpiration(request.getVisa().getDateExpiration());
+        demande.setMotifDemande(request.getVisa().getMotifDemande());
+        demandeRepository.save(demande);
+
+        demandeDocumentRepository.deleteAllByIdDemande(idDemande);
+        demandeDocumentRepository.flush();
+        Set<Long> uploadedDocuments = new HashSet<>(request.getUploadedDocumentIds());
+        for (Long documentId : uploadedDocuments) {
+            DemandeDocument demandeDocument = new DemandeDocument();
+            demandeDocument.setIdDemande(idDemande);
+            demandeDocument.setIdDocument(documentId);
+            demandeDocumentRepository.save(demandeDocument);
+        }
+
+        return new DemandeCreatedResponse(idDemande, DOSSIER_CREE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CreateDemandeRequest getDemandeForEdit(Long idDemande) {
+        Demande demande = demandeRepository
+            .findById(idDemande)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+
+        Demandeur demandeur = demandeurRepository
+            .findById(demande.getIdDemandeur())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demandeur introuvable"));
+
+        Passport passport = passportRepository
+            .findById(demande.getIdPassport())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Passport introuvable"));
+
+        List<Long> uploadedDocumentIds = demandeDocumentRepository
+            .findByIdDemande(idDemande)
+            .stream()
+            .map(DemandeDocument::getIdDocument)
+            .collect(Collectors.toList());
+
+        CreateDemandeRequest request = new CreateDemandeRequest();
+        request.setIdCategorieVisa(demande.getIdCategorieVisa());
+        request.setUploadedDocumentIds(uploadedDocumentIds);
+
+        CreateDemandeRequest.EtatCivilRequest etatCivil = new CreateDemandeRequest.EtatCivilRequest();
+        etatCivil.setNom(demandeur.getNom());
+        etatCivil.setPrenom(demandeur.getPrenom());
+        etatCivil.setNomJeuneFille(demandeur.getNomJeuneFille());
+        etatCivil.setDateNaissance(demandeur.getDateNaissance());
+        etatCivil.setLieuNaissance(demandeur.getLieuNaissance());
+        etatCivil.setSituationFamiliale(demandeur.getIdSituationFamiliale());
+        etatCivil.setNationalite(demandeur.getIdNationalite());
+        etatCivil.setContact(demandeur.getTelephone());
+        etatCivil.setAdresse(demandeur.getAdresse());
+        request.setEtatCivil(etatCivil);
+
+        CreateDemandeRequest.PassportRequest passportRequest = new CreateDemandeRequest.PassportRequest();
+        passportRequest.setNumero(passport.getNumero());
+        passportRequest.setDateDelivrance(passport.getDateDelivrance());
+        passportRequest.setDateExpiration(passport.getDateExpiration());
+        request.setPassport(passportRequest);
+
+        CreateDemandeRequest.VisaRequest visa = new CreateDemandeRequest.VisaRequest();
+        visa.setLieu(demande.getLieu());
+        visa.setDateEntree(demande.getDateEntree());
+        visa.setDateExpiration(demande.getDateExpiration());
+        visa.setMotifDemande(demande.getMotifDemande());
+        request.setVisa(visa);
+
+        return request;
+    }
+
+    @Override
     public List<DemandeListResponse> searchDemandes(
         String statut,
         Long idCategorieVisa,

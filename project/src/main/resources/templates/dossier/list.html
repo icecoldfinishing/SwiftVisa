@@ -79,11 +79,12 @@
                     <th>Date demande</th>
                     <th>Motif</th>
                     <th>Statut</th>
+                    <th>Action</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(dossiers)}">
-                    <td colspan="8" class="muted">Aucun dossier trouve.</td>
+                    <td colspan="9" class="muted">Aucun dossier trouve.</td>
                 </tr>
                 <tr th:each="d : ${dossiers}">
                     <td th:text="${d.id}">1</td>
@@ -94,6 +95,9 @@
                     <td th:text="${d.dateDemande}">2026-01-01</td>
                     <td th:text="${d.motifDemande}">Motif</td>
                     <td th:text="${d.statut}">DOSSIER_CREE</td>
+                    <td>
+                        <a class="btn-light" th:href="@{/dossiers/{id}/modifier(id=${d.id})}">Modifier</a>
+                    </td>
                 </tr>
                 </tbody>
             </table>

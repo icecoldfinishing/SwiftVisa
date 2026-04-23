@@ -38,7 +38,12 @@
         <div th:if="${successMessage}" class="alert ok" th:text="${successMessage}"></div>
         <div th:if="${errorMessage}" class="alert err" th:text="${errorMessage}"></div>
 
-        <form id="dossierForm" th:action="@{/dossiers}" th:object="${dossierForm}" method="post">
+        <form
+            id="dossierForm"
+            th:action="${isEditMode} ? @{/dossiers/{id}(id=${dossierId})} : @{/dossiers}"
+            th:object="${dossierForm}"
+            method="post"
+        >
             <div class="block">
                 <h3>Visa</h3>
                 <div class="grid">
@@ -124,7 +129,7 @@
             </div>
 
             <div class="actions">
-                <button type="submit" class="btn-main">Creer le dossier</button>
+                <button type="submit" class="btn-main" th:text="${isEditMode} ? 'Enregistrer les modifications' : 'Creer le dossier'">Creer le dossier</button>
                 <a th:href="@{/dossiers}" class="btn-link">Voir la liste</a>
             </div>
         </form>

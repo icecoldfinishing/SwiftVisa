@@ -1,7 +1,17 @@
 package com.visa.management.repository.demande;
 
 import com.visa.management.model.demande.DemandeDocument;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface DemandeDocumentRepository extends JpaRepository<DemandeDocument, Long> {
+
+	List<DemandeDocument> findByIdDemande(Long idDemande);
+
+	@Modifying
+	@Query("delete from DemandeDocument dd where dd.idDemande = :idDemande")
+	int deleteAllByIdDemande(@Param("idDemande") Long idDemande);
 }
