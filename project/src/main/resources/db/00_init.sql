@@ -244,10 +244,17 @@ INSERT INTO visa_categorie (code, libelle) VALUES
 ('TRAVAILLEUR', 'travailleur'),
 ('INVESTISSEUR', 'investisseur');
 
-INSERT INTO demande_type_status (code, libelle) VALUES
-('DOSSIER_CREE', 'Dossier cree'),
-('DOSSIER_VALIDE', 'Dossier valide'),
-('DOSSIER_SCANNER', 'Dossier scanne');
+INSERT INTO demande_type_status (code, libelle)
+SELECT 'DOSSIER_CREE', 'Dossier cree'
+WHERE NOT EXISTS (SELECT 1 FROM demande_type_status WHERE code = 'DOSSIER_CREE');
+
+INSERT INTO demande_type_status (code, libelle)
+SELECT 'DOSSIER_VALIDE', 'Dossier valide'
+WHERE NOT EXISTS (SELECT 1 FROM demande_type_status WHERE code = 'DOSSIER_VALIDE');
+
+INSERT INTO demande_type_status (code, libelle)
+SELECT 'DOCUMENT_SCANNER', 'Document scanner'
+WHERE NOT EXISTS (SELECT 1 FROM demande_type_status WHERE code = 'DOCUMENT_SCANNER');
 
 INSERT INTO document_categorie_visa (id_document, id_categorie_visa, is_obligatoire) VALUES
 (1, 1, TRUE),
@@ -259,4 +266,5 @@ INSERT INTO document_categorie_visa (id_document, id_categorie_visa, is_obligato
 (3, 2, TRUE),
 (5, 2, TRUE),
 (7, 2, FALSE),
-(8, 2, FALSE);
+(8, 2, FALSE)
+ON CONFLICT (id_document, id_categorie_visa) DO NOTHING;
