@@ -15,6 +15,8 @@ public interface DemandeService {
 
     DemandeCreatedResponse updateDemande(Long idDemande, CreateDemandeRequest request);
 
+    DemandeCreatedResponse validateDemande(Long idDemande);
+
     CreateDemandeRequest getDemandeForEdit(Long idDemande);
 
     List<DemandeListResponse> searchDemandes(

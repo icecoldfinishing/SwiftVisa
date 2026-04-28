@@ -18,11 +18,15 @@
         th { text-transform: uppercase; font-size: 0.74rem; letter-spacing: 0.04em; color: #5f6e7d; background: #f6f9fc; }
         .muted { color: #8a98a8; }
         .ok { background: #dff6ea; color: #0e6648; border: 1px solid #b7e9d3; border-radius: 0.65rem; padding: 0.65rem 0.8rem; }
+        .err { background: #fde6e6; color: #9a2f2f; border: 1px solid #f5c3c3; border-radius: 0.65rem; padding: 0.65rem 0.8rem; }
+        .btn-validate { border: 0; background: #0f5b8f; color: #fff; border-radius: 0.6rem; padding: 0.4rem 0.7rem; font-weight: 700; }
+        .action-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
         @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
     </style>
 
     <div class="wrap">
         <div th:if="${successMessage}" class="ok" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="err" th:text="${errorMessage}"></div>
 
         <form method="get" th:action="@{/dossiers}" class="filters">
             <div class="grid">
@@ -35,6 +39,7 @@
                     <select name="statut">
                         <option value="">Tous</option>
                         <option value="DOSSIER_CREE" th:selected="${statut == 'DOSSIER_CREE'}">DOSSIER_CREE</option>
+                        <option value="DOSSIER_VALIDE" th:selected="${statut == 'DOSSIER_VALIDE'}">DOSSIER_VALIDE</option>
                     </select>
                 </div>
                 <div class="line">
@@ -74,8 +79,12 @@
                     <th>ID</th>
                     <th>Nom</th>
                     <th>Prenom</th>
+                    <th>Type demande</th>
+                    <th>Type donnees</th>
+                    <th>Dossier base</th>
                     <th>Passport</th>
                     <th>Categorie</th>
+                    <th>Nationalite</th>
                     <th>Date demande</th>
                     <th>Motif</th>
                     <th>Statut</th>
@@ -84,19 +93,32 @@
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(dossiers)}">
-                    <td colspan="9" class="muted">Aucun dossier trouve.</td>
+                    <td colspan="12" class="muted">Aucun dossier trouve.</td>
                 </tr>
                 <tr th:each="d : ${dossiers}">
                     <td th:text="${d.id}">1</td>
                     <td th:text="${d.nom}">Nom</td>
                     <td th:text="${d.prenom}">Prenom</td>
+                    <td th:text="${d.demandeTypeLibelle}">nouveau titre</td>
+                    <td th:text="${d.demandeDonneesLibelle}">sans donnees</td>
+                    <td th:text="${d.idDemandeSource}">-</td>
                     <td th:text="${d.numeroPassport}">P0001</td>
-                    <td th:text="${d.idCategorieVisa}">1</td>
+                    <td th:text="${d.categorieVisaLibelle}">travailleur</td>
+                    <td th:text="${d.nationaliteLibelle}">Malagache</td>
                     <td th:text="${d.dateDemande}">2026-01-01</td>
                     <td th:text="${d.motifDemande}">Motif</td>
                     <td th:text="${d.statut}">DOSSIER_CREE</td>
                     <td>
-                        <a class="btn-light" th:href="@{/dossiers/{id}/modifier(id=${d.id})}">Modifier</a>
+                        <div class="action-group">
+                            <a class="btn-light" th:href="@{/dossiers/{id}/modifier(id=${d.id})}">Modifier</a>
+                            <form
+                                th:if="${d.statut == null or d.statut != 'DOSSIER_VALIDE'}"
+                                th:action="@{/dossiers/{id}/valider(id=${d.id})}"
+                                method="post"
+                            >
+                                <button class="btn-validate" type="submit">Valider</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 </tbody>

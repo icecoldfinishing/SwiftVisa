@@ -19,6 +19,12 @@ public interface DemandeRepository extends JpaRepository<Demande, Long> {
 				dm.telephone AS contact,
 				dm.adresse AS adresse,
 				d.id_categorie_visa AS idCategorieVisa,
+				vc.libelle AS categorieVisaLibelle,
+				dt.libelle AS demandeTypeLibelle,
+				d.id_demande_donnees_type AS idDemandeDonneesType,
+				dd.libelle AS demandeDonneesLibelle,
+				nat.libelle AS nationaliteLibelle,
+				d.id_demande_source AS idDemandeSource,
 				d.date_demande AS dateDemande,
 				d.lieu AS lieu,
 				d.date_entree AS dateEntree,
@@ -28,6 +34,10 @@ public interface DemandeRepository extends JpaRepository<Demande, Long> {
 				p.numero AS numeroPassport
 			FROM demande d
 			JOIN demandeur dm ON dm.id = d.id_demandeur
+			LEFT JOIN nationalite nat ON nat.id = dm.id_nationalite
+			LEFT JOIN visa_categorie vc ON vc.id = d.id_categorie_visa
+			LEFT JOIN demande_type dt ON dt.id = d.id_demande_type
+			LEFT JOIN demande_type_donnees dd ON dd.id = d.id_demande_donnees_type
 			LEFT JOIN passport p ON p.id = d.id_passport
 			LEFT JOIN demande_status ds ON ds.id_demande = d.id
 			LEFT JOIN demande_type_status dts ON dts.id = ds.id_demande_type_status

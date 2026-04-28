@@ -16,6 +16,12 @@ public class DemandeListResponse {
     private String contact;
     private String adresse;
     private Long idCategorieVisa;
+    private String categorieVisaLibelle;
+    private String demandeTypeLibelle;
+    private Long idDemandeDonneesType;
+    private String demandeDonneesLibelle;
+    private String nationaliteLibelle;
+    private Long idDemandeSource;
     private LocalDate dateDemande;
     private String lieu;
     private LocalDate dateEntree;
