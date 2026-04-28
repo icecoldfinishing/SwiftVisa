@@ -14,6 +14,7 @@
         .doc-item { display: flex; gap: 0.45rem; align-items: start; }
         .doc-item.is-hidden { display: none; }
         .doc-item.is-required strong { color: #0e6648; }
+        .is-hidden { display: none; }
         .required-badge {
             display: inline-flex;
             margin-left: 0.35rem;
@@ -44,6 +45,53 @@
             th:object="${dossierForm}"
             method="post"
         >
+            <div class="block">
+                <h3>Nature de la demande</h3>
+                <div class="grid">
+                    <div class="line">
+                        <label>Type de la demande</label>
+                        <select th:field="*{idDemandeType}" id="idDemandeType" required>
+                            <option value="">Selectionner</option>
+                            <option th:each="item : ${demandeTypes}" th:value="${item.id}" th:text="${item.libelle}" th:attr="data-code=${item.code}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid" id="demandeDonneesWrap">
+                    <div class="line">
+                        <label>Type de données</label>
+                        <select th:field="*{idDemandeDonneesType}" id="idDemandeDonneesType">
+                            <option value="">Selectionner</option>
+                            <option th:each="item : ${demandeTypeDonnees}" th:value="${item.id}" th:text="${item.libelle}" th:attr="data-code=${item.code}"></option>
+                        </select>
+                        <small class="hint">Requis pour duplicata et transfert.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="block is-hidden" id="donneesAnterieuresBlock">
+                <h3>Donnees anterieures</h3>
+                <p class="hint">Renseignez au moins une reference si vous avez des donnees anterieures.</p>
+                <div class="grid">
+                    <div class="line">
+                        <label>Numero passport anterieur</label>
+                        <input type="text" th:field="*{numeroPassportAnterieur}">
+                    </div>
+                    <div class="line">
+                        <label>Reference visa anterieur</label>
+                        <input type="text" th:field="*{refVisaAnterieur}">
+                    </div>
+                    <div class="line">
+                        <label>Reference carte resident anterieure</label>
+                        <input type="text" th:field="*{refCarteResidantAnterieur}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="block is-hidden" id="sansDonneesHint">
+                <h3>Sans donnees anterieures</h3>
+                <p class="hint">Le dossier sera enregistre comme un nouveau titre puis un duplicata ou transfert sera ajoute.</p>
+            </div>
+
             <div class="block">
                 <h3>Visa</h3>
                 <div class="grid">
@@ -139,9 +187,17 @@
         (function () {
             const form = document.getElementById("dossierForm");
             const categorySelect = document.getElementById("idCategorieVisa");
+            const typeSelect = document.getElementById("idDemandeType");
+            const donneesSelect = document.getElementById("idDemandeDonneesType");
+            const donneesWrap = document.getElementById("demandeDonneesWrap");
+            const referencesBlock = document.getElementById("donneesAnterieuresBlock");
+            const sansHint = document.getElementById("sansDonneesHint");
+            const refPassport = document.getElementById("numeroPassportAnterieur");
+            const refVisa = document.getElementById("refVisaAnterieur");
+            const refCarte = document.getElementById("refCarteResidantAnterieur");
             const docItems = Array.from(document.querySelectorAll(".doc-item"));
 
-            if (!form || !categorySelect || docItems.length === 0) {
+            if (!form) {
                 return;
             }
 
@@ -153,7 +209,21 @@
                 return matches ? matches : [];
             };
 
+            const getSelectedCode = (select) => {
+                if (!select) {
+                    return null;
+                }
+                const selected = select.options[select.selectedIndex];
+                return selected ? selected.getAttribute("data-code") : null;
+            };
+
+            const isSpecialType = (typeCode) =>
+                typeCode === "DUPLICATAT_CARTE_RESIDENCE" || typeCode === "TRANSFERT_VISA_NOUVEAU_PASSEPORT";
+
             const updateDocumentsState = () => {
+                if (!categorySelect || docItems.length === 0) {
+                    return;
+                }
                 const selectedCategory = categorySelect.value;
 
                 docItems.forEach((item) => {
@@ -187,9 +257,66 @@
                 });
             };
 
-            categorySelect.addEventListener("change", updateDocumentsState);
+            const updateDemandeTypeState = () => {
+                const typeCode = getSelectedCode(typeSelect);
+                const showDonnees = isSpecialType(typeCode);
+
+                if (donneesWrap) {
+                    donneesWrap.classList.toggle("is-hidden", !showDonnees);
+                }
+
+                if (donneesSelect) {
+                    donneesSelect.required = showDonnees;
+                    if (!showDonnees) {
+                        donneesSelect.value = "";
+                    }
+                }
+
+                updateDonneesState();
+            };
+
+            const updateDonneesState = () => {
+                const typeCode = getSelectedCode(typeSelect);
+                const donneesCode = getSelectedCode(donneesSelect);
+                const showReferences = isSpecialType(typeCode) && donneesCode === "AVEC_DONNEES_ANTERIEUR";
+                const showSansHint = isSpecialType(typeCode) && donneesCode === "SANS_DONNEES_ANTERIEUR";
+
+                if (referencesBlock) {
+                    referencesBlock.classList.toggle("is-hidden", !showReferences);
+                }
+                if (sansHint) {
+                    sansHint.classList.toggle("is-hidden", !showSansHint);
+                }
+            };
+
+            const hasAnyReference = () => {
+                const values = [refPassport, refVisa, refCarte]
+                    .filter((input) => input)
+                    .map((input) => input.value.trim());
+                return values.some((value) => value.length > 0);
+            };
+
+            if (categorySelect) {
+                categorySelect.addEventListener("change", updateDocumentsState);
+            }
+            if (typeSelect) {
+                typeSelect.addEventListener("change", updateDemandeTypeState);
+            }
+            if (donneesSelect) {
+                donneesSelect.addEventListener("change", updateDonneesState);
+            }
 
             form.addEventListener("submit", (event) => {
+                const typeCode = getSelectedCode(typeSelect);
+                const donneesCode = getSelectedCode(donneesSelect);
+                const needsReference = isSpecialType(typeCode) && donneesCode === "AVEC_DONNEES_ANTERIEUR";
+
+                if (needsReference && !hasAnyReference()) {
+                    event.preventDefault();
+                    alert("Merci de renseigner au moins une reference (passport, visa ou carte resident).");
+                    return;
+                }
+
                 const selectedCategory = categorySelect.value;
 
                 if (!selectedCategory) {
@@ -219,6 +346,7 @@
                 }
             });
 
+            updateDemandeTypeState();
             updateDocumentsState();
         })();
     </script>

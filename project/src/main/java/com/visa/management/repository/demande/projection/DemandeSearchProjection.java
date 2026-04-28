@@ -16,6 +16,18 @@ public interface DemandeSearchProjection {
 
     Long getIdCategorieVisa();
 
+    String getCategorieVisaLibelle();
+
+    String getDemandeTypeLibelle();
+
+    Long getIdDemandeDonneesType();
+
+    String getDemandeDonneesLibelle();
+
+    String getNationaliteLibelle();
+
+    Long getIdDemandeSource();
+
     LocalDate getDateDemande();
 
     String getLieu();

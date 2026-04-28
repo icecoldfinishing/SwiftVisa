@@ -35,7 +35,8 @@ INSERT INTO visa_categorie (code, libelle) VALUES
 ('INVESTISSEUR', 'investisseur');
 
 INSERT INTO demande_type_status (code, libelle) VALUES
-('DOSSIER_CREE', 'Dossier cree');
+('DOSSIER_CREE', 'Dossier cree'),
+('DOSSIER_VALIDE', 'Dossier valide');
 
 INSERT INTO document_categorie_visa (id_document, id_categorie_visa, is_obligatoire) VALUES
 (1, 1, TRUE),

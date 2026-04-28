@@ -12,7 +12,18 @@ import lombok.Data;
 public class CreateDemandeRequest {
 
     @NotNull
+    private Long idDemandeType;
+
+    @NotNull
     private Long idCategorieVisa;
+
+    private Long idDemandeDonneesType;
+
+    private String numeroPassportAnterieur;
+
+    private String refVisaAnterieur;
+
+    private String refCarteResidantAnterieur;
 
     @Valid
     @NotNull

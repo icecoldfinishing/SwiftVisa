@@ -4,6 +4,8 @@ import com.visa.management.controller.demande.dto.CreateDemandeRequest;
 import com.visa.management.controller.demande.dto.DemandeListResponse;
 import com.visa.management.model.documents.DocumentCategorieVisa;
 import com.visa.management.service.demande.DemandeService;
+import com.visa.management.service.demande.DemandeTypeService;
+import com.visa.management.service.demande.DemandeTypeDonneesService;
 import com.visa.management.service.documents.DocumentCategorieVisaService;
 import com.visa.management.service.documents.DocumentService;
 import com.visa.management.service.utilities.NationaliteService;
@@ -30,6 +32,8 @@ public class DossierViewController {
     private final SituationFamilialeService situationFamilialeService;
     private final NationaliteService nationaliteService;
     private final VisaCategorieService visaCategorieService;
+    private final DemandeTypeService demandeTypeService;
+    private final DemandeTypeDonneesService demandeTypeDonneesService;
     private final DocumentService documentService;
     private final DocumentCategorieVisaService documentCategorieVisaService;
 
@@ -38,6 +42,8 @@ public class DossierViewController {
         SituationFamilialeService situationFamilialeService,
         NationaliteService nationaliteService,
         VisaCategorieService visaCategorieService,
+        DemandeTypeService demandeTypeService,
+        DemandeTypeDonneesService demandeTypeDonneesService,
         DocumentService documentService,
         DocumentCategorieVisaService documentCategorieVisaService
     ) {
@@ -45,6 +51,8 @@ public class DossierViewController {
         this.situationFamilialeService = situationFamilialeService;
         this.nationaliteService = nationaliteService;
         this.visaCategorieService = visaCategorieService;
+        this.demandeTypeService = demandeTypeService;
+        this.demandeTypeDonneesService = demandeTypeDonneesService;
         this.documentService = documentService;
         this.documentCategorieVisaService = documentCategorieVisaService;
     }
@@ -103,6 +111,17 @@ public class DossierViewController {
         }
     }
 
+    @PostMapping("/dossiers/{id}/valider")
+    public String validateDossier(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            demandeService.validateDemande(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Dossier valide avec succes.");
+        } catch (Exception exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:/dossiers";
+    }
+
     @GetMapping("/dossiers")
     public String listDossiers(
         @RequestParam(required = false) String statut,
@@ -136,7 +155,12 @@ public class DossierViewController {
 
     private CreateDemandeRequest toRequest(DossierForm form) {
         CreateDemandeRequest request = new CreateDemandeRequest();
+        request.setIdDemandeType(form.getIdDemandeType());
         request.setIdCategorieVisa(form.getIdCategorieVisa());
+        request.setIdDemandeDonneesType(form.getIdDemandeDonneesType());
+        request.setNumeroPassportAnterieur(form.getNumeroPassportAnterieur());
+        request.setRefVisaAnterieur(form.getRefVisaAnterieur());
+        request.setRefCarteResidantAnterieur(form.getRefCarteResidantAnterieur());
         request.setUploadedDocumentIds(form.getUploadedDocumentIds());
 
         CreateDemandeRequest.EtatCivilRequest etatCivil = new CreateDemandeRequest.EtatCivilRequest();
@@ -169,7 +193,12 @@ public class DossierViewController {
 
     private DossierForm fromRequest(CreateDemandeRequest request) {
         DossierForm form = new DossierForm();
+        form.setIdDemandeType(request.getIdDemandeType());
         form.setIdCategorieVisa(request.getIdCategorieVisa());
+        form.setIdDemandeDonneesType(request.getIdDemandeDonneesType());
+        form.setNumeroPassportAnterieur(request.getNumeroPassportAnterieur());
+        form.setRefVisaAnterieur(request.getRefVisaAnterieur());
+        form.setRefCarteResidantAnterieur(request.getRefCarteResidantAnterieur());
         form.setUploadedDocumentIds(request.getUploadedDocumentIds());
 
         if (request.getEtatCivil() != null) {
@@ -203,7 +232,9 @@ public class DossierViewController {
     private void addDossierFormOptions(Model model) {
         model.addAttribute("situationsFamiliales", situationFamilialeService.findAllSituationsFamiliales());
         model.addAttribute("nationalites", nationaliteService.findAllNationalites());
+        model.addAttribute("demandeTypes", demandeTypeService.findAllDemandeTypes());
         model.addAttribute("visaCategories", visaCategorieService.findAllVisaCategories());
+        model.addAttribute("demandeTypeDonnees", demandeTypeDonneesService.findAllDemandeTypeDonnees());
         model.addAttribute("documents", documentService.findAllDocuments());
 
         List<DocumentCategorieVisa> mappings = documentCategorieVisaService.findAllDocumentCategorieVisas();

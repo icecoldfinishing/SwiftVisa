@@ -20,6 +20,12 @@ public class Demande {
     @Column(name = "id_demande_type")
     private Long idDemandeType;
 
+    @Column(name = "id_demande_donnees_type")
+    private Long idDemandeDonneesType;
+
+    @Column(name = "id_demande_source")
+    private Long idDemandeSource;
+
     @Column(name = "id_demandeur")
     private Long idDemandeur;
 
@@ -61,6 +67,22 @@ public class Demande {
 
     public void setIdDemandeType(Long idDemandeType) {
         this.idDemandeType = idDemandeType;
+    }
+
+    public Long getIdDemandeDonneesType() {
+        return idDemandeDonneesType;
+    }
+
+    public void setIdDemandeDonneesType(Long idDemandeDonneesType) {
+        this.idDemandeDonneesType = idDemandeDonneesType;
+    }
+
+    public Long getIdDemandeSource() {
+        return idDemandeSource;
+    }
+
+    public void setIdDemandeSource(Long idDemandeSource) {
+        this.idDemandeSource = idDemandeSource;
     }
 
     public Long getIdDemandeur() {

@@ -9,7 +9,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Data
 public class DossierForm {
 
+    private Long idDemandeType;
     private Long idCategorieVisa;
+    private Long idDemandeDonneesType;
+
+    private String numeroPassportAnterieur;
+    private String refVisaAnterieur;
+    private String refCarteResidantAnterieur;
 
     private String nom;
     private String prenom;
