@@ -40,6 +40,7 @@
                         <option value="">Tous</option>
                         <option value="DOSSIER_CREE" th:selected="${statut == 'DOSSIER_CREE'}">DOSSIER_CREE</option>
                         <option value="DOSSIER_VALIDE" th:selected="${statut == 'DOSSIER_VALIDE'}">DOSSIER_VALIDE</option>
+                        <option value="DOCUMENT_SCANNER" th:selected="${statut == 'DOCUMENT_SCANNER'}">DOCUMENT_SCANNER</option>
                     </select>
                 </div>
                 <div class="line">
@@ -93,7 +94,7 @@
                 </thead>
                 <tbody>
                 <tr th:if="${#lists.isEmpty(dossiers)}">
-                    <td colspan="12" class="muted">Aucun dossier trouve.</td>
+                    <td colspan="13" class="muted">Aucun dossier trouve.</td>
                 </tr>
                 <tr th:each="d : ${dossiers}">
                     <td th:text="${d.id}">1</td>
@@ -111,8 +112,13 @@
                     <td>
                         <div class="action-group">
                             <a class="btn-light" th:href="@{/dossiers/{id}/modifier(id=${d.id})}">Modifier</a>
+                            <a
+                                class="btn-light"
+                                th:if="${d.statut == 'DOSSIER_CREE'}"
+                                th:href="@{/dossiers/{id}/scanner(id=${d.id})}"
+                            >Scanner</a>
                             <form
-                                th:if="${d.statut == null or d.statut != 'DOSSIER_VALIDE'}"
+                                th:if="${d.statut == 'DOSSIER_CREE'}"
                                 th:action="@{/dossiers/{id}/valider(id=${d.id})}"
                                 method="post"
                             >

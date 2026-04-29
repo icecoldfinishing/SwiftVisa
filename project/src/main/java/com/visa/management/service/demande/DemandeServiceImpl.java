@@ -1,10 +1,32 @@
 package com.visa.management.service.demande;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.visa.management.controller.demande.dto.CreateDemandeRequest;
 import com.visa.management.controller.demande.dto.DemandeCreatedResponse;
+import com.visa.management.controller.demande.dto.DemandeDocumentScanItemResponse;
 import com.visa.management.controller.demande.dto.DemandeListResponse;
 import com.visa.management.model.demande.Demande;
 import com.visa.management.model.demande.DemandeDocument;
+import com.visa.management.model.demande.DemandeDocumentScan;
 import com.visa.management.model.demande.DemandeReference;
 import com.visa.management.model.demande.DemandeReferenceType;
 import com.visa.management.model.demande.DemandeStatus;
@@ -12,39 +34,33 @@ import com.visa.management.model.demande.DemandeType;
 import com.visa.management.model.demande.DemandeTypeDonnees;
 import com.visa.management.model.demande.DemandeTypeStatus;
 import com.visa.management.model.demandeur.Demandeur;
+import com.visa.management.model.documents.Document;
 import com.visa.management.model.passport.Passport;
 import com.visa.management.model.visa.CarteResidant;
 import com.visa.management.model.visa.Visa;
 import com.visa.management.repository.demande.DemandeDocumentRepository;
-import com.visa.management.repository.demande.DemandeRepository;
-import com.visa.management.repository.demande.DemandeStatusRepository;
+import com.visa.management.repository.demande.DemandeDocumentScanRepository;
 import com.visa.management.repository.demande.DemandeReferenceRepository;
 import com.visa.management.repository.demande.DemandeReferenceTypeRepository;
+import com.visa.management.repository.demande.DemandeRepository;
+import com.visa.management.repository.demande.DemandeStatusRepository;
 import com.visa.management.repository.demande.DemandeTypeDonneesRepository;
 import com.visa.management.repository.demande.DemandeTypeRepository;
 import com.visa.management.repository.demande.DemandeTypeStatusRepository;
 import com.visa.management.repository.demande.projection.DemandeSearchProjection;
-import com.visa.management.repository.documents.DocumentCategorieVisaRepository;
 import com.visa.management.repository.demandeur.DemandeurRepository;
+import com.visa.management.repository.documents.DocumentCategorieVisaRepository;
+import com.visa.management.repository.documents.DocumentRepository;
 import com.visa.management.repository.passport.PassportRepository;
 import com.visa.management.repository.visa.CarteResidantRepository;
 import com.visa.management.repository.visa.VisaRepository;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class DemandeServiceImpl implements DemandeService {
 
     private static final String DOSSIER_CREE = "DOSSIER_CREE";
     private static final String DOSSIER_VALIDE = "DOSSIER_VALIDE";
+    private static final String DOCUMENT_SCANNER = "DOCUMENT_SCANNER";
     private static final String TYPE_NOUVEAU_TITRE = "NOUVEAU_TITRE";
     private static final String TYPE_DUPLICATA_CARTE = "DUPLICATAT_CARTE_RESIDENCE";
     private static final String TYPE_TRANSFERT_VISA = "TRANSFERT_VISA_NOUVEAU_PASSEPORT";
@@ -61,12 +77,17 @@ public class DemandeServiceImpl implements DemandeService {
     private final DemandeStatusRepository demandeStatusRepository;
     private final DocumentCategorieVisaRepository documentCategorieVisaRepository;
     private final DemandeDocumentRepository demandeDocumentRepository;
+    private final DemandeDocumentScanRepository demandeDocumentScanRepository;
+    private final DocumentRepository documentRepository;
     private final DemandeTypeRepository demandeTypeRepository;
     private final DemandeTypeDonneesRepository demandeTypeDonneesRepository;
     private final DemandeReferenceTypeRepository demandeReferenceTypeRepository;
     private final DemandeReferenceRepository demandeReferenceRepository;
     private final VisaRepository visaRepository;
     private final CarteResidantRepository carteResidantRepository;
+
+    @Value("${swiftvisa.scan-upload-dir:uploads/scans}")
+    private String scanUploadDir;
 
     public DemandeServiceImpl(
         DemandeRepository demandeRepository,
@@ -76,6 +97,8 @@ public class DemandeServiceImpl implements DemandeService {
         DemandeStatusRepository demandeStatusRepository,
         DocumentCategorieVisaRepository documentCategorieVisaRepository,
         DemandeDocumentRepository demandeDocumentRepository,
+        DemandeDocumentScanRepository demandeDocumentScanRepository,
+        DocumentRepository documentRepository,
         DemandeTypeRepository demandeTypeRepository,
         DemandeTypeDonneesRepository demandeTypeDonneesRepository,
         DemandeReferenceTypeRepository demandeReferenceTypeRepository,
@@ -90,6 +113,8 @@ public class DemandeServiceImpl implements DemandeService {
         this.demandeStatusRepository = demandeStatusRepository;
         this.documentCategorieVisaRepository = documentCategorieVisaRepository;
         this.demandeDocumentRepository = demandeDocumentRepository;
+        this.demandeDocumentScanRepository = demandeDocumentScanRepository;
+        this.documentRepository = documentRepository;
         this.demandeTypeRepository = demandeTypeRepository;
         this.demandeTypeDonneesRepository = demandeTypeDonneesRepository;
         this.demandeReferenceTypeRepository = demandeReferenceTypeRepository;
@@ -387,6 +412,145 @@ public class DemandeServiceImpl implements DemandeService {
             .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<DemandeDocumentScanItemResponse> getDemandeDocumentsForScan(Long idDemande) {
+        Demande demande = demandeRepository
+            .findById(idDemande)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+
+        ensureScanAllowedByStatus(idDemande);
+
+        List<DemandeDocument> demandeDocuments = demandeDocumentRepository.findByIdDemande(idDemande);
+        if (demandeDocuments.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> documentIds = demandeDocuments
+            .stream()
+            .map(DemandeDocument::getIdDocument)
+            .collect(Collectors.toSet());
+        Map<Long, String> documentLibelles = documentRepository
+            .findAllById(documentIds)
+            .stream()
+            .collect(Collectors.toMap(Document::getId, Document::getLibelle));
+
+        Set<Long> requiredDocumentIds = new HashSet<>(
+            documentCategorieVisaRepository.findRequiredDocumentIdsByCategorieVisa(demande.getIdCategorieVisa())
+        );
+
+        Set<Long> demandeDocumentIds = demandeDocuments
+            .stream()
+            .map(DemandeDocument::getId)
+            .collect(Collectors.toSet());
+        Map<Long, DemandeDocumentScan> scansByDemandeDocumentId = demandeDocumentScanRepository
+            .findByIdDemandeDocumentIn(demandeDocumentIds)
+            .stream()
+            .collect(Collectors.toMap(DemandeDocumentScan::getIdDemandeDocument, scan -> scan));
+
+        return demandeDocuments
+            .stream()
+            .sorted(Comparator.comparing(DemandeDocument::getId))
+            .map(demandeDocument -> {
+                DemandeDocumentScan scan = scansByDemandeDocumentId.get(demandeDocument.getId());
+                boolean scanned = scan != null;
+
+                return DemandeDocumentScanItemResponse
+                    .builder()
+                    .idDemandeDocument(demandeDocument.getId())
+                    .idDocument(demandeDocument.getIdDocument())
+                    .documentLibelle(documentLibelles.getOrDefault(demandeDocument.getIdDocument(), "Document"))
+                    .obligatoire(requiredDocumentIds.contains(demandeDocument.getIdDocument()))
+                        .scanFileName(scan != null ? scan.getFileName() : null)
+                        .scanFileSize(scan != null ? scan.getFileSize() : null)
+                    .scanned(scanned)
+                    .build();
+            })
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void uploadDemandeDocumentScan(Long idDemande, Long idDemandeDocument, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fichier de scan requis.");
+        }
+
+        demandeRepository
+            .findById(idDemande)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+
+        ensureScanAllowedByStatus(idDemande);
+
+        DemandeDocument demandeDocument = demandeDocumentRepository
+            .findByIdAndIdDemande(idDemandeDocument, idDemande)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document du dossier introuvable."));
+
+        String safeOriginalName = sanitizeFileName(file.getOriginalFilename());
+        String extension = extractExtension(safeOriginalName);
+        Path baseDirectory = Paths.get(scanUploadDir).toAbsolutePath().normalize();
+        Path dossierDirectory = baseDirectory.resolve("demande-" + idDemande).normalize();
+        String storedName = "ddoc-" + idDemandeDocument + "-" + UUID.randomUUID() + extension;
+        Path storedFilePath = dossierDirectory.resolve(storedName).normalize();
+
+        if (!storedFilePath.startsWith(dossierDirectory)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chemin de fichier invalide.");
+        }
+
+        try {
+            Files.createDirectories(dossierDirectory);
+            file.transferTo(storedFilePath);
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Impossible de sauvegarder le scan.");
+        }
+
+        DemandeDocumentScan scan = demandeDocumentScanRepository
+            .findByIdDemandeDocument(demandeDocument.getId())
+            .orElseGet(DemandeDocumentScan::new);
+        deleteExistingScanFile(scan.getFilePath());
+        scan.setIdDemandeDocument(demandeDocument.getId());
+        scan.setFileName(safeOriginalName);
+        scan.setFilePath(storedFilePath.toString());
+        scan.setMimeType(file.getContentType());
+        scan.setFileSize(file.getSize());
+        demandeDocumentScanRepository.save(scan);
+    }
+
+    @Override
+    @Transactional
+    public DemandeCreatedResponse finishDemandeScan(Long idDemande) {
+        demandeRepository
+            .findById(idDemande)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
+
+        ensureScanAllowedByStatus(idDemande);
+
+        List<DemandeDocument> demandeDocuments = demandeDocumentRepository.findByIdDemande(idDemande);
+        if (demandeDocuments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aucun document a scanner pour ce dossier.");
+        }
+
+        Set<Long> demandeDocumentIds = demandeDocuments
+            .stream()
+            .map(DemandeDocument::getId)
+            .collect(Collectors.toSet());
+        Set<Long> scannedDemandeDocumentIds = demandeDocumentScanRepository
+            .findByIdDemandeDocumentIn(demandeDocumentIds)
+            .stream()
+            .map(DemandeDocumentScan::getIdDemandeDocument)
+            .collect(Collectors.toSet());
+
+        if (!scannedDemandeDocumentIds.containsAll(demandeDocumentIds)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Tous les documents doivent etre scannes avant de terminer."
+            );
+        }
+
+        setDemandeStatus(idDemande, DOCUMENT_SCANNER, "Document scanner");
+        return new DemandeCreatedResponse(idDemande, DOCUMENT_SCANNER);
+    }
+
     private void validateRequiredDocuments(Long idCategorieVisa, List<Long> uploadedDocumentIds) {
         Set<Long> uploaded = new HashSet<>(uploadedDocumentIds);
         Set<Long> required = new HashSet<>(
@@ -466,7 +630,7 @@ public class DemandeServiceImpl implements DemandeService {
 
     private void setDemandeStatus(Long idDemande, String statusCode, String libelle) {
         DemandeTypeStatus statusType = demandeTypeStatusRepository
-            .findByCodeIgnoreCase(statusCode)
+            .findTopByCodeIgnoreCaseOrderByIdAsc(statusCode)
             .orElseGet(() -> {
                 DemandeTypeStatus status = new DemandeTypeStatus();
                 status.setCode(statusCode);
@@ -573,6 +737,46 @@ public class DemandeServiceImpl implements DemandeService {
             } else if (REF_CARTE.equalsIgnoreCase(code)) {
                 request.setRefCarteResidantAnterieur(reference.getValeur());
             }
+        }
+    }
+
+    private void ensureScanAllowedByStatus(Long idDemande) {
+        String currentStatus = demandeStatusRepository.findLatestStatusCodeByIdDemande(idDemande);
+        if (currentStatus == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Statut du dossier introuvable.");
+        }
+        if (!DOSSIER_CREE.equalsIgnoreCase(currentStatus)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Le scan est autorise uniquement pour un dossier au statut DOSSIER_CREE."
+            );
+        }
+    }
+
+    private String sanitizeFileName(String originalFileName) {
+        if (isBlank(originalFileName)) {
+            return "scan.bin";
+        }
+        String sanitized = Paths.get(originalFileName).getFileName().toString().replaceAll("[^a-zA-Z0-9._-]", "_");
+        return sanitized.isBlank() ? "scan.bin" : sanitized;
+    }
+
+    private String extractExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex < 0) {
+            return "";
+        }
+        return fileName.substring(dotIndex);
+    }
+
+    private void deleteExistingScanFile(String existingPath) {
+        if (isBlank(existingPath)) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(Paths.get(existingPath));
+        } catch (IOException exception) {
+            // Ignore cleanup failure to avoid blocking upload replacement.
         }
     }
 

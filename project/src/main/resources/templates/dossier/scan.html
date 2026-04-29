@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{passport/layout :: appLayout('Scan des documents','Upload des scans du dossier',${activeMenu},${accountName},${accountRole},~{::main})}">
+<main>
+    <style>
+        .wrap { padding: 1.2rem; display: grid; gap: 0.9rem; }
+        .ok { background: #dff6ea; color: #0e6648; border: 1px solid #b7e9d3; border-radius: 0.65rem; padding: 0.65rem 0.8rem; }
+        .err { background: #fde6e6; color: #9a2f2f; border: 1px solid #f5c3c3; border-radius: 0.65rem; padding: 0.65rem 0.8rem; }
+        .table-wrap { border: 1px solid #d7dde8; border-radius: 0.8rem; overflow: auto; background: #fff; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.55rem 0.6rem; border-bottom: 1px solid #e7edf5; font-size: 0.88rem; vertical-align: middle; }
+        th { text-transform: uppercase; font-size: 0.74rem; letter-spacing: 0.04em; color: #5f6e7d; background: #f6f9fc; }
+        .badge-required { background: #dff6ea; color: #0e6648; border: 1px solid #b7e9d3; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 700; }
+        .badge-optional { background: #eef2f7; color: #34485c; border: 1px solid #d5deea; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 700; }
+        .badge-scanned { background: #dff6ea; color: #0e6648; border: 1px solid #b7e9d3; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 700; }
+        .badge-pending { background: #fff3d9; color: #8a5d02; border: 1px solid #f0d8a3; border-radius: 999px; padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 700; }
+        .upload-row { display: flex; gap: 0.45rem; align-items: center; }
+        .upload-row input[type='file'] { max-width: 260px; }
+        .btn-main { border: 0; background: #0b6e4f; color: #fff; border-radius: 0.6rem; padding: 0.48rem 0.8rem; font-weight: 700; }
+        .btn-light { border: 1px solid #c8d2df; background: #f7fbff; color: #203244; border-radius: 0.6rem; padding: 0.48rem 0.8rem; text-decoration: none; font-weight: 700; }
+        .bottom-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    </style>
+
+    <div class="wrap">
+        <div th:if="${successMessage}" class="ok" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="err" th:text="${errorMessage}"></div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>Type</th>
+                    <th>Etat</th>
+                    <th>Fichier actuel</th>
+                    <th>Upload scan</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(scanDocuments)}">
+                    <td colspan="5">Aucun document a scanner.</td>
+                </tr>
+                <tr th:each="item : ${scanDocuments}">
+                    <td th:text="${item.documentLibelle}">Document</td>
+                    <td>
+                        <span th:if="${item.obligatoire}" class="badge-required">Obligatoire</span>
+                        <span th:unless="${item.obligatoire}" class="badge-optional">Optionnel</span>
+                    </td>
+                    <td>
+                        <span th:if="${item.scanned}" class="badge-scanned">Scanne</span>
+                        <span th:unless="${item.scanned}" class="badge-pending">En attente</span>
+                    </td>
+                    <td th:text="${item.scanFileName != null ? item.scanFileName : '-'}">-</td>
+                    <td>
+                        <form
+                            class="upload-row"
+                            th:action="@{/dossiers/{id}/scanner/{idDemandeDocument}(id=${dossierId},idDemandeDocument=${item.idDemandeDocument})}"
+                            method="post"
+                            enctype="multipart/form-data"
+                        >
+                            <input type="file" name="scanFile" required>
+                            <button type="submit" class="btn-main">Uploader</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bottom-actions">
+            <a th:href="@{/dossiers}" class="btn-light">Retour</a>
+            <form th:action="@{/dossiers/{id}/scanner/terminer(id=${dossierId})}" method="post">
+                <button type="submit" class="btn-main">Terminer le scan</button>
+            </form>
+        </div>
+    </div>
+</main>
+</html>

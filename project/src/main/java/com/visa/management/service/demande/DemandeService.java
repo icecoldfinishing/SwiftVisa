@@ -1,11 +1,15 @@
 package com.visa.management.service.demande;
 
-import com.visa.management.model.demande.Demande;
-import com.visa.management.controller.demande.dto.CreateDemandeRequest;
-import com.visa.management.controller.demande.dto.DemandeCreatedResponse;
-import com.visa.management.controller.demande.dto.DemandeListResponse;
 import java.time.LocalDate;
 import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import com.visa.management.controller.demande.dto.CreateDemandeRequest;
+import com.visa.management.controller.demande.dto.DemandeCreatedResponse;
+import com.visa.management.controller.demande.dto.DemandeDocumentScanItemResponse;
+import com.visa.management.controller.demande.dto.DemandeListResponse;
+import com.visa.management.model.demande.Demande;
 
 public interface DemandeService {
 
@@ -27,4 +31,10 @@ public interface DemandeService {
         LocalDate dateFin,
         String recherche
     );
+
+    List<DemandeDocumentScanItemResponse> getDemandeDocumentsForScan(Long idDemande);
+
+    void uploadDemandeDocumentScan(Long idDemande, Long idDemandeDocument, MultipartFile file);
+
+    DemandeCreatedResponse finishDemandeScan(Long idDemande);
 }

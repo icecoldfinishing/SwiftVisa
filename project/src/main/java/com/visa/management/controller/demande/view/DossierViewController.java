@@ -1,29 +1,32 @@
 package com.visa.management.controller.demande.view;
 
-import com.visa.management.controller.demande.dto.CreateDemandeRequest;
-import com.visa.management.controller.demande.dto.DemandeListResponse;
-import com.visa.management.model.documents.DocumentCategorieVisa;
-import com.visa.management.service.demande.DemandeService;
-import com.visa.management.service.demande.DemandeTypeService;
-import com.visa.management.service.demande.DemandeTypeDonneesService;
-import com.visa.management.service.documents.DocumentCategorieVisaService;
-import com.visa.management.service.documents.DocumentService;
-import com.visa.management.service.utilities.NationaliteService;
-import com.visa.management.service.utilities.SituationFamilialeService;
-import com.visa.management.service.visa.VisaCategorieService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.visa.management.controller.demande.dto.CreateDemandeRequest;
+import com.visa.management.controller.demande.dto.DemandeListResponse;
+import com.visa.management.model.documents.DocumentCategorieVisa;
+import com.visa.management.service.demande.DemandeService;
+import com.visa.management.service.demande.DemandeTypeDonneesService;
+import com.visa.management.service.demande.DemandeTypeService;
+import com.visa.management.service.documents.DocumentCategorieVisaService;
+import com.visa.management.service.documents.DocumentService;
+import com.visa.management.service.utilities.NationaliteService;
+import com.visa.management.service.utilities.SituationFamilialeService;
+import com.visa.management.service.visa.VisaCategorieService;
 
 @Controller
 public class DossierViewController {
@@ -120,6 +123,47 @@ public class DossierViewController {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
         }
         return "redirect:/dossiers";
+    }
+
+    @GetMapping("/dossiers/{id}/scanner")
+    public String scanDossier(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            addLayoutContext(model, "queue");
+            model.addAttribute("dossierId", id);
+            model.addAttribute("scanDocuments", demandeService.getDemandeDocumentsForScan(id));
+            return "dossier/scan";
+        } catch (Exception exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            return "redirect:/dossiers";
+        }
+    }
+
+    @PostMapping("/dossiers/{id}/scanner/{idDemandeDocument}")
+    public String uploadScan(
+        @PathVariable Long id,
+        @PathVariable Long idDemandeDocument,
+        @RequestParam("scanFile") MultipartFile scanFile,
+        RedirectAttributes redirectAttributes
+    ) {
+        try {
+            demandeService.uploadDemandeDocumentScan(id, idDemandeDocument, scanFile);
+            redirectAttributes.addFlashAttribute("successMessage", "Scan enregistre avec succes.");
+        } catch (Exception exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        }
+        return "redirect:/dossiers/" + id + "/scanner";
+    }
+
+    @PostMapping("/dossiers/{id}/scanner/terminer")
+    public String finishScan(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            demandeService.finishDemandeScan(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Scan termine. Statut passe a DOCUMENT_SCANNER.");
+            return "redirect:/dossiers";
+        } catch (Exception exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            return "redirect:/dossiers/" + id + "/scanner";
+        }
     }
 
     @GetMapping("/dossiers")

@@ -144,6 +144,18 @@ CREATE TABLE demande_document (
     CONSTRAINT uq_demande_document UNIQUE (id_demande, id_document)
 );
 
+CREATE TABLE demande_document_scan (
+    id SERIAL PRIMARY KEY,
+    id_demande_document INT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    mime_type VARCHAR(100),
+    file_size BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_demande_document) REFERENCES demande_document(id),
+    CONSTRAINT uq_demande_document_scan UNIQUE (id_demande_document)
+);
+
 CREATE TABLE demande_reference (
     id SERIAL PRIMARY KEY,
     id_demande INT NOT NULL,
@@ -232,9 +244,17 @@ INSERT INTO visa_categorie (code, libelle) VALUES
 ('TRAVAILLEUR', 'travailleur'),
 ('INVESTISSEUR', 'investisseur');
 
-INSERT INTO demande_type_status (code, libelle) VALUES
-('DOSSIER_CREE', 'Dossier cree'),
-('DOSSIER_VALIDE', 'Dossier valide');
+INSERT INTO demande_type_status (code, libelle)
+SELECT 'DOSSIER_CREE', 'Dossier cree'
+WHERE NOT EXISTS (SELECT 1 FROM demande_type_status WHERE code = 'DOSSIER_CREE');
+
+INSERT INTO demande_type_status (code, libelle)
+SELECT 'DOSSIER_VALIDE', 'Dossier valide'
+WHERE NOT EXISTS (SELECT 1 FROM demande_type_status WHERE code = 'DOSSIER_VALIDE');
+
+INSERT INTO demande_type_status (code, libelle)
+SELECT 'DOCUMENT_SCANNER', 'Document scanner'
+WHERE NOT EXISTS (SELECT 1 FROM demande_type_status WHERE code = 'DOCUMENT_SCANNER');
 
 INSERT INTO document_categorie_visa (id_document, id_categorie_visa, is_obligatoire) VALUES
 (1, 1, TRUE),
@@ -246,4 +266,5 @@ INSERT INTO document_categorie_visa (id_document, id_categorie_visa, is_obligato
 (3, 2, TRUE),
 (5, 2, TRUE),
 (7, 2, FALSE),
-(8, 2, FALSE);
+(8, 2, FALSE)
+ON CONFLICT (id_document, id_categorie_visa) DO NOTHING;
